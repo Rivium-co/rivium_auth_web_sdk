@@ -1,0 +1,20 @@
+{
+  "name": "rivium-auth-web-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Example app for the Rivium Auth Web SDK",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rivium/auth-web": "file:.."
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vite": "^5.4.21"
+  }
+}
