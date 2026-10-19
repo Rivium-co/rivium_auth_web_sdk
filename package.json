@@ -1,6 +1,6 @@
 {
   "name": "@rivium/auth-web",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Rivium Auth SDK for web apps - hosted sign-in for your users",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

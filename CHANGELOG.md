@@ -1,3 +1,8 @@
+## [0.1.1] - 2026-10-20
+
+- Sends `X-Rivium-SDK: auth-web/0.1.1` with every request so Rivium can show which SDK versions are in use. No behaviour
+  change.
+
 ## [0.1.0] - 2026-10-16
 
 - Initial release: anonymous, Apple, Google, e-mail + password, magic link and Telegram sign-in; linking a method to

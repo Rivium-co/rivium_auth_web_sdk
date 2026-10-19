@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { RiviumAuth } from '../src/client';
 import { RiviumAuthError } from '../src/errors';
@@ -315,5 +317,17 @@ describe('nonce', () => {
     const n = await createNonce();
     expect(n.rawNonce).toMatch(/^[0-9a-f]{64}$/);
     expect(n.hashedNonce).toBe(toHex(sha256(new TextEncoder().encode(n.rawNonce))));
+  });
+});
+
+describe('sdk header', () => {
+  it('every request carries X-Rivium-SDK: auth-web/<package.json version>', async () => {
+    const { version } = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8'));
+    expect(version).toBe('0.1.1');
+    const { server, auth } = setup();
+    await auth.signInAnonymously();
+    await auth.signOut();
+    expect(server.calls.length).toBeGreaterThanOrEqual(2);
+    for (const c of server.calls) expect(c.headers['X-Rivium-SDK']).toBe('auth-web/0.1.1');
   });
 });

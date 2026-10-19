@@ -1,6 +1,7 @@
 import { isRiviumAuthError, RiviumAuthError, SESSION_ENDED_CODES } from './errors';
 import { createNonce, SignInNonce } from './nonce';
 import { MemoryStorage, RiviumAuthStorage } from './storage';
+import { SDK_NAME, SDK_VERSION } from './version';
 import type {
   AppleSignInInput,
   AuthStateListener,
@@ -15,6 +16,9 @@ import type {
   SignUpResult,
   TelegramCodeResult,
 } from './types';
+
+/** Sent with every request so Rivium can show which SDK versions are in use (version comes from package.json). */
+const SDK_HEADER = `auth-${SDK_NAME}/${SDK_VERSION}`;
 
 export const DEFAULT_BASE_URL = 'https://auth-users.rivium.co';
 /** A new access token is fetched this long before the current one expires. */
@@ -403,7 +407,11 @@ export class RiviumAuth {
   }
 
   private async request<T = unknown>(method: string, path: string, body?: unknown, bearer?: string): Promise<T> {
-    const headers: Record<string, string> = { 'x-api-key': this.apiKey, Accept: 'application/json' };
+    const headers: Record<string, string> = {
+      'x-api-key': this.apiKey,
+      'X-Rivium-SDK': SDK_HEADER,
+      Accept: 'application/json',
+    };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (bearer) headers.Authorization = `Bearer ${bearer}`;
 
