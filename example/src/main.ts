@@ -104,6 +104,48 @@ $('link-btn').addEventListener('click', () => {
   void run('Linked e-mail to the current user', async () => (await auth.linkPassword(input)).userId);
 });
 
+// ── Magic link ───────────────────────────────────────────────────────────────────────────────────
+
+/** The token from a pasted link (…?token=…) or a bare token. */
+function magicToken(value: string): string | null {
+  const v = value.trim();
+  if (!v) return null;
+  try {
+    return new URL(v).searchParams.get('token');
+  } catch {
+    return v;
+  }
+}
+
+$('magic-send-btn').addEventListener('click', () => {
+  const email = emailEl.value.trim();
+  if (!email) {
+    log('Enter an e-mail first', 'error');
+    return;
+  }
+  const redirectUrl = $<HTMLInputElement>('magic-redirect').value.trim();
+  void run('Magic link sent', async () => {
+    await auth.sendMagicLink({ email, redirectUrl });
+    return `check ${email} (the answer is the same whether or not the address has an account)`;
+  });
+});
+
+const signInWithLink = (token: string) =>
+  run('Signed in with the magic link', async () => (await auth.signInWithMagicLink({ token })).userId);
+
+$('magic-signin-btn').addEventListener('click', () => {
+  const token = magicToken($<HTMLInputElement>('magic-link').value);
+  if (token) void signInWithLink(token);
+  else log('Paste the link from the e-mail first', 'error');
+});
+
+// Opened from the e-mail link itself (a page served at an allowed https address): sign in at once.
+const opened = new URLSearchParams(window.location.search).get('token');
+if (opened && !API_KEY.includes('YOUR_PUBLIC_KEY')) {
+  history.replaceState(null, '', window.location.pathname);
+  void signInWithLink(opened);
+}
+
 $('me-btn').addEventListener('click', () =>
   run('Profile', async () => JSON.stringify(await auth.getMe())),
 );

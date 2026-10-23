@@ -50,6 +50,24 @@
         </form>
       </section>
 
+      <section class="card" aria-labelledby="magic-title">
+        <h2 id="magic-title">Magic link</h2>
+        <p class="hint">
+          Sends a sign-in link to the e-mail above. The link address must be one of the project's allowed link addresses
+          (Console › Rivium Auth › Settings › Link addresses). On a local page, copy the link from the e-mail and paste it below.
+        </p>
+        <label for="magic-redirect">Link address</label>
+        <input id="magic-redirect" type="url" value="https://example.com/rivium-auth-test" />
+        <div class="button-group">
+          <button id="magic-send-btn" class="btn btn-secondary" type="button">Send magic link</button>
+        </div>
+        <label for="magic-link">Link from the e-mail (or just its token)</label>
+        <input id="magic-link" type="text" autocomplete="off" />
+        <div class="button-group">
+          <button id="magic-signin-btn" class="btn btn-primary" type="button">Sign in with the link</button>
+        </div>
+      </section>
+
       <section class="card" aria-labelledby="account-title">
         <h2 id="account-title">Account</h2>
         <div class="button-group">
