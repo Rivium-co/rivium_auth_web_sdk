@@ -56,13 +56,15 @@ interface Stored {
  */
 export class RiviumAuth {
   private readonly apiKey: string;
-  private readonly baseUrl: string;
+  /** The Rivium Auth server this client talks to. */
+  readonly baseUrl: string;
   private readonly storage: RiviumAuthStorage;
   private readonly storageKey: string;
   private readonly timeoutMs: number;
   private readonly fetchFn: FetchLike;
   private readonly now: () => number;
 
+  private language: string | null = null;
   private session: Session | null = null;
   private user: RiviumUser | null = null;
   /** Bumped whenever the session is replaced or cleared, so a slower request never overwrites newer state. */
@@ -84,7 +86,30 @@ export class RiviumAuth {
     const globalFetch = (globalThis as { fetch?: FetchLike }).fetch;
     this.fetchFn = config.fetch ?? ((url, init) => (globalFetch as FetchLike)(url, init));
     this.now = now;
+    this.languageCode = config.languageCode ?? null;
     this.readyPromise = this.restore();
+  }
+
+  // ── Language ──────────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * The language of the e-mails Rivium sends (confirm e-mail, password reset, magic link), like Firebase's
+   * `auth.languageCode`: a BCP 47 tag such as `de` or `en-US`. null = the project's template language (Console ›
+   * Rivium Auth › Email templates). A language Rivium has no texts for also falls back to the template language.
+   */
+  get languageCode(): string | null {
+    return this.language;
+  }
+
+  set languageCode(value: string | null) {
+    const v = typeof value === 'string' ? value.trim() : '';
+    this.language = v && v.length <= 35 && /^[A-Za-z]{2,8}([-_][A-Za-z0-9]{1,8})*$/.test(v) ? v : null;
+  }
+
+  /** Sets `languageCode` to the browser's language (`navigator.language`), like Firebase's `useDeviceLanguage()`. */
+  useDeviceLanguage(): void {
+    const nav = (globalThis as { navigator?: { language?: string } }).navigator;
+    this.languageCode = nav?.language ?? null;
   }
 
   // ── State ─────────────────────────────────────────────────────────────────────────────────────
@@ -223,8 +248,11 @@ export class RiviumAuth {
     return this.signIn(await this.request<ServerTokens>('POST', '/v1/password/sign-in', { email: input.email, password: input.password }));
   }
 
-  /** Sends a reset link to `redirectUrl?token=…`. Answers the same whether or not the address has an account. */
-  async sendPasswordReset(input: { email: string; redirectUrl: string }): Promise<void> {
+  /**
+   * Sends a reset link to `redirectUrl?token=…`, or to Rivium's own reset page when `redirectUrl` is left out.
+   * Answers the same whether or not the address has an account.
+   */
+  async sendPasswordReset(input: { email: string; redirectUrl?: string }): Promise<void> {
     await this.request('POST', '/v1/password/forgot', { email: input.email, redirectUrl: input.redirectUrl });
   }
 
@@ -427,6 +455,7 @@ export class RiviumAuth {
     };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (bearer) headers.Authorization = `Bearer ${bearer}`;
+    if (this.language) headers['x-rivium-locale'] = this.language;
 
     const AC = (globalThis as { AbortController?: new () => { signal: unknown; abort(): void } }).AbortController;
     const controller = AC ? new AC() : undefined;

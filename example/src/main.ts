@@ -4,12 +4,15 @@
  * Uses the public API key only. Put yours in `.env` (see `.env.example`); the placeholder below is not a real key.
  */
 import { createRiviumAuth, isRiviumAuthError } from '@rivium/auth-web';
+import { openSignIn } from '@rivium/auth-web/ui';
 
 const API_KEY: string = import.meta.env.VITE_RIVIUM_API_KEY || 'rv_live_YOUR_PUBLIC_KEY';
+// Optional: another Auth server, for example one you run yourself. Unset = the default server.
+const SERVER_URL: string | undefined = import.meta.env.VITE_RIVIUM_AUTH_URL || undefined;
 
 // Memory storage (the default): the user signs in again after a reload.
 // To keep the session, pass `storage: localStorageStorage()` (read the README's warning first).
-const auth = createRiviumAuth({ apiKey: API_KEY });
+const auth = createRiviumAuth({ apiKey: API_KEY, baseUrl: SERVER_URL });
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -77,6 +80,13 @@ if (API_KEY.includes('YOUR_PUBLIC_KEY')) {
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────────────────────────
+
+$('ui-btn').addEventListener('click', () =>
+  run('Ready-made sign-in', async () => {
+    const result = await openSignIn(auth, { appName: 'Example', allowGuest: true });
+    return result ? `signed in as ${result.userId}` : 'closed';
+  }),
+);
 
 $('anon-btn').addEventListener('click', () =>
   run('Signed in anonymously', async () => (await auth.signInAnonymously()).userId),

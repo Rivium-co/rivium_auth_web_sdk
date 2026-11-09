@@ -12,10 +12,10 @@ const STANDARD = { iss: 'rivium', aud: 'rivium_user', sub: 'ru_user1', pid: 'p1'
 
 describe('getTokenResult (Firebase getIdTokenResult)', () => {
   it("decodes every field, flat, custom claims included; meta is Rivium's own and left out", () => {
-    const token = jwt({ ...STANDARD, plan: 'pro', team: { id: 't1', role: 'editor' }, نقش: 'مدیر' });
+    const token = jwt({ ...STANDARD, plan: 'pro', team: { id: 't1', role: 'editor' }, 役割: '管理者' });
     const r = tokenResultOf(token)!;
     expect(r.token).toBe(token);
-    expect(r.claims).toEqual({ ...STANDARD, meta: undefined, plan: 'pro', team: { id: 't1', role: 'editor' }, نقش: 'مدیر' });
+    expect(r.claims).toEqual({ ...STANDARD, meta: undefined, plan: 'pro', team: { id: 't1', role: 'editor' }, 役割: '管理者' });
     expect(r.claims).not.toHaveProperty('meta');
     expect(r.expirationTime).toBe(new Date((NOW + 3600) * 1000).toISOString());
     expect(r.issuedAtTime).toBe(new Date(NOW * 1000).toISOString());
@@ -23,8 +23,8 @@ describe('getTokenResult (Firebase getIdTokenResult)', () => {
     expect(r.signInProvider).toBe('google');
   });
 
-  it('reads UTF-8 (Farsi, emoji) exactly; a broken token gives null, never a throw', () => {
-    expect(decodeTokenPayload(jwt({ a: 'سلام 👋' }))).toEqual({ a: 'سلام 👋' });
+  it('reads UTF-8 (non-Latin script, emoji) exactly; a broken token gives null, never a throw', () => {
+    expect(decodeTokenPayload(jwt({ a: 'こんにちは 👋' }))).toEqual({ a: 'こんにちは 👋' });
     expect(decodeTokenPayload('not.a.token!')).toBeNull();
     expect(decodeTokenPayload('one-part')).toBeNull();
     expect(tokenResultOf(jwt({ sub: 'x' }))).toBeNull(); // no exp / iat
@@ -54,14 +54,5 @@ describe('getTokenResult (Firebase getIdTokenResult)', () => {
     plan = 'pro'; // the developer's server changed the claims
     expect((await auth.getTokenResult())!.claims.plan).toBe('free'); // cached token until it is refreshed
     expect((await auth.getTokenResult({ forceRefresh: true }))!.claims.plan).toBe('pro');
-  });
-
-  it('custom claims nested under `claims` (Rivium server) come out by name; token fields win', () => {
-    const { auth_time: _a, ...rest } = STANDARD;
-    const r = tokenResultOf(jwt({ ...rest, claims: { levels: ['A1'], sub: 'someone-else' } }))!;
-    expect(r.claims.levels).toEqual(['A1']);
-    expect(r.claims.sub).toBe('ru_user1');
-    expect(r.claims).not.toHaveProperty('claims');
-    expect(r.authTime).toBe(r.issuedAtTime);
   });
 });

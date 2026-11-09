@@ -61,5 +61,8 @@ export const SESSION_ENDED_CODES: ReadonlySet<RiviumAuthErrorCode> = new Set([
 ]);
 
 export function isRiviumAuthError(err: unknown): err is RiviumAuthError {
-  return err instanceof RiviumAuthError;
+  if (err instanceof RiviumAuthError) return true;
+  // Also an error from another copy of the SDK (the CommonJS and ESM builds, or two bundles of one app).
+  const e = err as { name?: unknown; code?: unknown; status?: unknown } | null;
+  return err instanceof Error && e?.name === 'RiviumAuthError' && typeof e.code === 'string' && typeof e.status === 'number';
 }

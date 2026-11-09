@@ -61,13 +61,8 @@ const isoOf = (seconds: unknown): string | null =>
 export function tokenResultOf(token: string): RiviumTokenResult | null {
   const payload = decodeTokenPayload(token);
   if (!payload) return null;
-  // `meta` is Rivium's own bookkeeping for its servers, not a claim. Custom claims come at the top level; a server
-  // that nests them under `claims` gets them spread out too (token fields always win over a custom claim).
-  const { meta: _meta, claims: nested, ...fields } = payload;
-  const claims: Record<string, unknown> = {
-    ...(nested && typeof nested === 'object' && !Array.isArray(nested) ? (nested as Record<string, unknown>) : {}),
-    ...fields,
-  };
+  // `meta` is Rivium's own bookkeeping for its servers, not a claim.
+  const { meta: _meta, ...claims } = payload;
   const amr = Array.isArray(payload.amr) && typeof payload.amr[0] === 'string' ? (payload.amr[0] as string) : null;
   const expirationTime = isoOf(payload.exp);
   const issuedAtTime = isoOf(payload.iat);

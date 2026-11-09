@@ -30,21 +30,13 @@
 
 ## Installation
 
-The package is published on [Rivium Center](https://center.rivium.co). Add this line to your project's `.npmrc`:
-
-```ini
-@rivium:registry=https://center.rivium.co/api/packages/rivium/npm/
-```
-
-Then install:
-
 ```bash
 npm install @rivium/auth-web
 # or
 yarn add @rivium/auth-web
 ```
 
-Requires a browser with `fetch` and `crypto.getRandomValues` (every current browser). For your server (custom claims, users) there is [`@rivium/auth-admin`](https://rivium.co/docs/auth/admin-sdk).
+Requires a browser with `fetch` and `crypto.getRandomValues` (every current browser). Rivium Auth has no server SDK.
 
 ## Quick start
 
