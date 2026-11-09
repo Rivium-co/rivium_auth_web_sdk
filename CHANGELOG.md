@@ -1,3 +1,12 @@
+## [0.2.0] - 2026-11-05
+
+- `getTokenResult({ forceRefresh })`: the access token with its decoded fields, like Firebase's
+  `getIdTokenResult()`. `claims` holds the custom claims your server set with `setCustomUserClaims`, at the top level
+  (for example `plan`, `role`), plus `sub`, `iat`, `exp`, `auth_time` and `amr`; also `expirationTime`,
+  `issuedAtTime`, `authTime` and `signInProvider`. For showing things in the app; access is still decided on the
+  server. Pass `{ forceRefresh: true }` right after your server changed the claims.
+- `decodeTokenPayload(token)` helper.
+
 ## [0.1.1] - 2026-10-20
 
 - Sends `X-Rivium-SDK: auth-web/0.1.1` with every request so Rivium can show which SDK versions are in use. No behaviour

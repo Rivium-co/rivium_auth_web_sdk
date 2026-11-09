@@ -36,6 +36,28 @@ export interface RiviumAuthMethods {
   telegramBot: string | null;
 }
 
+/**
+ * The access token with its decoded fields, like Firebase's `IdTokenResult`. Times are UTC ISO strings.
+ * For display only: Rivium's servers check the token and decide access with rules.
+ */
+export interface RiviumTokenResult {
+  /** The access token itself (the same one `getToken()` gives). */
+  token: string;
+  /**
+   * Every field of the token: `sub` (the user id), `pid`, `iss`, `aud`, `iat`, `exp`, `auth_time`, `amr`, and the
+   * custom claims your server set with `setCustomUserClaims` (for example `plan`, `role`).
+   */
+  claims: Record<string, unknown>;
+  /** When this token expires. */
+  expirationTime: string;
+  /** When this token was issued. */
+  issuedAtTime: string;
+  /** When the user signed in (the session's start; a refresh doesn't change it). */
+  authTime: string;
+  /** How the user signed in: `anonymous`, `apple`, `google`, `password`, `magic_link`, `telegram`. */
+  signInProvider: string | null;
+}
+
 /** The signed-in user as the server reports it. */
 export interface RiviumUser {
   id: string;

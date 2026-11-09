@@ -7,6 +7,7 @@ export { localStorageStorage } from './local-storage';
 export { createNonce } from './nonce';
 export type { SignInNonce } from './nonce';
 export { SDK_NAME, SDK_VERSION } from './version';
+export { decodeTokenPayload } from './token-result';
 export type {
   AppleSignInInput,
   AuthStateListener,
@@ -17,6 +18,7 @@ export type {
   RiviumAuthMethod,
   RiviumAuthMethods,
   RiviumTokenProvider,
+  RiviumTokenResult,
   RiviumUser,
   SignInResult,
   SignUpResult,

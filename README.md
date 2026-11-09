@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://rivium.co">
-    <img src="https://rivium.co/logo.png" alt="Rivium" width="120" />
+    <img src="https://rivium.co/icon.svg" alt="Rivium" width="120" />
   </a>
 </p>
 
@@ -11,7 +11,6 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@rivium/auth-web"><img src="https://img.shields.io/npm/v/@rivium/auth-web.svg" alt="npm" /></a>
   <img src="https://img.shields.io/badge/TypeScript-5+-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5+" />
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" />
 </p>
@@ -31,13 +30,21 @@
 
 ## Installation
 
+The package is published on [Rivium Center](https://center.rivium.co). Add this line to your project's `.npmrc`:
+
+```ini
+@rivium:registry=https://center.rivium.co/api/packages/rivium/npm/
+```
+
+Then install:
+
 ```bash
 npm install @rivium/auth-web
 # or
 yarn add @rivium/auth-web
 ```
 
-Requires a browser with `fetch` and `crypto.getRandomValues` (every current browser). Rivium Auth has no server SDK.
+Requires a browser with `fetch` and `crypto.getRandomValues` (every current browser). For your server (custom claims, users) there is [`@rivium/auth-admin`](https://rivium.co/docs/auth/admin-sdk).
 
 ## Quick start
 
@@ -146,6 +153,21 @@ const me = await auth.getMe();     // { id, anonymous, emailVerified, createdAt,
 await auth.signOut();              // this device
 await auth.signOutEverywhere();    // every device
 await auth.deleteAccount();        // deletes the user, then signs out
+```
+
+## Custom claims
+
+Your server sets custom claims for a user with the server secret (`setCustomUserClaims`, see
+[Custom claims](https://rivium.co/docs/auth/custom-claims)), for example `{ "plan": "pro" }`. Every token of the
+user carries them, and Rivium Sync rules read them as `auth.token.plan`. In the app, read them to show things
+(a "Pro" badge): access is still decided on the server.
+
+```ts
+const result = await auth.getTokenResult();
+if (result?.claims.plan === 'pro') showProBadge();
+
+// Right after your server changed the claims ("Check my purchase"):
+await auth.getTokenResult({ forceRefresh: true });
 ```
 
 ## Errors
