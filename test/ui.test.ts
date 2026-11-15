@@ -144,6 +144,42 @@ describe('sign-in screens (web)', () => {
     expect(text()).toContain('choose a new password');
   });
 
+  it('e-mail not confirmed yet: "Send again" sends the confirmation with the typed e-mail and password', async () => {
+    const f = fake(['password'], {
+      '/v1/password/sign-in': () => err('EMAIL_NOT_VERIFIED', 403),
+      '/v1/email/resend-verification': () => ({ status: 202, body: { ok: true } }),
+    });
+    const signedIn = mount(f.auth, { continueUrl: 'https://app.example.com/' });
+    await settle();
+    expect(has('resend')).toBe(false);
+    await type('email', 'ali@example.com');
+    await type('password', 'a-good-password');
+    await click('sign-in');
+    expect(text()).toContain('Confirm your e-mail first');
+    await click('resend');
+    expect(f.bodies('/v1/email/resend-verification')).toEqual([
+      { email: 'ali@example.com', password: 'a-good-password', redirectUrl: `${BASE}/pages/verify`, continueUrl: 'https://app.example.com/' },
+    ]);
+    expect(el('sent')?.textContent).toBe('We sent a new link to ali@example.com.');
+    expect(signedIn).toEqual([]);
+  });
+
+  it('"Send again" shows the error of a failed send', async () => {
+    const f = fake(['password'], {
+      '/v1/password/sign-in': () => err('EMAIL_NOT_VERIFIED', 403),
+      '/v1/email/resend-verification': () => err('RATE_LIMITED', 429),
+    });
+    mount(f.auth);
+    await settle();
+    await type('email', 'ali@example.com');
+    await type('password', 'a-good-password');
+    await click('sign-in');
+    expect(el('resend')?.textContent).toBe('Send again');
+    await click('resend');
+    expect(has('error')).toBe(true);
+    expect(has('sent')).toBe(false);
+  });
+
   it('magic link uses the app’s URL and checks the address', async () => {
     const f = fake(['magicLink'], { '/v1/magic-link/send': () => ({ status: 202 }) });
     mount(f.auth, { magicLinkRedirectUrl: 'https://app.example.com/auth' });
@@ -198,6 +234,9 @@ describe('sign-in screens (web)', () => {
     expect(has('error')).toBe(false);
     answer = 'google-id-token';
     await click('google');
+    // The request goes out after the nonce is hashed (async): wait for it.
+    await vi.waitFor(() => expect(f.bodies('/v1/google')).toHaveLength(1));
+    await vi.waitFor(() => expect(signedIn).toHaveLength(1));
     const body = f.bodies('/v1/google')[0];
     expect(body.idToken).toBe('google-id-token');
     expect(await sha256Hex(body.nonce)).toBe(hashed);

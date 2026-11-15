@@ -304,6 +304,43 @@ describe('account', () => {
   });
 });
 
+describe('e-mail links', () => {
+  it('resendVerification sends the e-mail and password, does not sign in, and passes the server error', async () => {
+    const { server, auth } = setup();
+    server.overrides.set('/v1/email/resend-verification', () => ({ status: 202, body: { ok: true } }));
+    await auth.resendVerification({ email: 'a@b.co', password: 'longpassword', continueUrl: 'https://app.example.com/' });
+    const call = server.calls.find((c) => c.path === '/v1/email/resend-verification')!;
+    expect(call.method).toBe('POST');
+    expect(call.body).toEqual({ email: 'a@b.co', password: 'longpassword', continueUrl: 'https://app.example.com/' });
+    expect(call.headers.Authorization).toBeUndefined();
+    expect(auth.isSignedIn).toBe(false);
+    server.overrides.set('/v1/email/resend-verification', () => ({ status: 401, body: { code: 'INVALID_CREDENTIALS', message: 'E-mail or password is wrong' } }));
+    await expect(auth.resendVerification({ email: 'a@b.co', password: 'wrong-one' })).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS', status: 401 });
+  });
+
+  it('continueUrl is sent only when given (sign-up, reset, verification)', async () => {
+    const { server, auth } = setup();
+    server.overrides.set('/v1/password/sign-up', () => ({ status: 200, body: { userId: 'ru_new', verificationSent: true, session: null } }));
+    server.overrides.set('/v1/password/forgot', () => ({ status: 202, body: { ok: true } }));
+    await auth.signUpWithEmail({ email: 'a@b.co', password: 'longpassword' });
+    await auth.signUpWithEmail({ email: 'c@b.co', password: 'longpassword', continueUrl: 'https://app.example.com/in' });
+    await auth.sendPasswordReset({ email: 'a@b.co' });
+    await auth.sendPasswordReset({ email: 'a@b.co', continueUrl: 'https://app.example.com/in' });
+    const bodies = server.calls.filter((c) => c.path !== '/v1/methods').map((c) => c.body);
+    expect(bodies).toEqual([
+      { email: 'a@b.co', password: 'longpassword' },
+      { email: 'c@b.co', password: 'longpassword', continueUrl: 'https://app.example.com/in' },
+      { email: 'a@b.co' },
+      { email: 'a@b.co', continueUrl: 'https://app.example.com/in' },
+    ]);
+    await auth.signInAnonymously();
+    server.overrides.set('/v1/email/send-verification', () => ({ status: 202, body: { ok: true } }));
+    await auth.sendEmailVerification();
+    await auth.sendEmailVerification({ continueUrl: 'https://app.example.com/in' });
+    expect(server.calls.filter((c) => c.path === '/v1/email/send-verification').map((c) => c.body)).toEqual([{}, { continueUrl: 'https://app.example.com/in' }]);
+  });
+});
+
 describe('nonce', () => {
   it('built-in sha256 matches known vectors and Web Crypto', async () => {
     const enc = new TextEncoder();
@@ -323,11 +360,11 @@ describe('nonce', () => {
 describe('sdk header', () => {
   it('every request carries X-Rivium-SDK: auth-web/<package.json version>', async () => {
     const { version } = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8'));
-    expect(version).toBe('0.4.0');
+    expect(version).toBe('0.5.0');
     const { server, auth } = setup();
     await auth.signInAnonymously();
     await auth.signOut();
     expect(server.calls.length).toBeGreaterThanOrEqual(2);
-    for (const c of server.calls) expect(c.headers['X-Rivium-SDK']).toBe('auth-web/0.4.0');
+    for (const c of server.calls) expect(c.headers['X-Rivium-SDK']).toBe('auth-web/0.5.0');
   });
 });

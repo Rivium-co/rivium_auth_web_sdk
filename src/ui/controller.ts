@@ -5,7 +5,7 @@ import type { SignInUiOptions } from './options';
 import type { UiStrings } from './strings';
 
 export type UiView = 'loading' | 'home' | 'signUp' | 'forgot' | 'magicLink' | 'telegramPhone' | 'telegramCode' | 'sent' | 'unavailable';
-export type SentKind = 'reset' | 'magicLink' | 'verify';
+export type SentKind = 'reset' | 'magicLink' | 'verify' | 'resend';
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -70,6 +70,10 @@ export class SignInController {
   get hasOtherMethods(): boolean {
     return this.showMagicLink || this.showTelegram || this.showGoogle || this.showApple || this.showGuest;
   }
+  /** Signing in said the e-mail isn't confirmed yet: offer to send the confirmation again (needs the typed password). */
+  get canResend(): boolean {
+    return this.error === 'EMAIL_NOT_VERIFIED' && !!this.password && this.showPassword;
+  }
   get errorText(): string | null {
     return this.error ? this.strings.error(this.error) : null;
   }
@@ -132,6 +136,7 @@ export class SignInController {
         email: this.email.trim(),
         password: this.password,
         redirectUrl: this.options.verifyRedirectUrl ?? `${this.auth.baseUrl}/pages/verify`,
+        continueUrl: this.options.continueUrl,
       });
       if (r.signedIn) return this.done({ userId: r.userId });
       this.password = '';
@@ -146,8 +151,23 @@ export class SignInController {
 
   sendReset = (): Promise<void> =>
     this.withEmail(false, async () => {
-      await this.auth.sendPasswordReset({ email: this.email.trim(), redirectUrl: this.options.resetRedirectUrl }); // none: Rivium's reset page
+      // No redirect URL: Rivium's reset page.
+      await this.auth.sendPasswordReset({ email: this.email.trim(), redirectUrl: this.options.resetRedirectUrl, continueUrl: this.options.continueUrl });
       this.sent = 'reset';
+      this.set({ view: 'sent' });
+    });
+
+  /** "Send again": the confirmation e-mail for an account that can't sign in until it is confirmed. */
+  resend = (): Promise<void> =>
+    this.withEmail(true, async () => {
+      await this.auth.resendVerification({
+        email: this.email.trim(),
+        password: this.password,
+        redirectUrl: this.options.verifyRedirectUrl ?? `${this.auth.baseUrl}/pages/verify`,
+        continueUrl: this.options.continueUrl,
+      });
+      this.password = '';
+      this.sent = 'resend';
       this.set({ view: 'sent' });
     });
 

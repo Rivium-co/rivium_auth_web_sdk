@@ -33,4 +33,7 @@ export interface SignInUiOptions {
   verifyRedirectUrl?: string;
   /** Where the password reset link goes. Default: Rivium's own reset page. */
   resetRedirectUrl?: string;
+  /** One of the project's link addresses. Rivium's own confirm and reset pages show a "Continue" button to it when
+   * they are done, so people get back to your app. */
+  continueUrl?: string;
 }

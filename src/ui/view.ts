@@ -85,6 +85,7 @@ function home(c: SignInController): HTMLElement {
   return h('div', {},
     header(c, c.title),
     errorBanner(c),
+    c.canResend && h('div', { class: 'center' }, link(c, 'resend', t('resend'), c.resend)),
     c.showPassword && form(c.signIn,
       field(c, 'email', t('email'), c.email, (v) => (c.email = v), { type: 'email', autocomplete: 'email', error: c.emailError, ltr: true }),
       field(c, 'password', t('password'), c.password, (v) => (c.password = v), { type: 'password', autocomplete: 'current-password', error: c.passwordError }),
@@ -155,7 +156,7 @@ function message(c: SignInController): HTMLElement {
       link(c, 'retry', t('retry'), () => void c.load()),
     );
   }
-  const key = c.sent === 'reset' ? 'resetSent' : c.sent === 'magicLink' ? 'linkSent' : 'verifySent';
+  const key = c.sent === 'reset' ? 'resetSent' : c.sent === 'magicLink' ? 'linkSent' : c.sent === 'resend' ? 'resendSent' : 'verifySent';
   const [before, after] = t(key).split('{email}');
   return h('div', {},
     header(c, t('checkEmail')),

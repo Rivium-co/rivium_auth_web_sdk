@@ -231,14 +231,16 @@ export class RiviumAuth {
   }
 
   /**
-   * Creates an e-mail + password account. Pass `redirectUrl` (one of the project's allowed redirect URLs) to send a
-   * verification e-mail. If the project requires a verified e-mail, the user is not signed in yet (`signedIn: false`).
+   * Creates an e-mail + password account. Pass `redirectUrl` (one of the project's link addresses) to send a
+   * verification e-mail to your own page. If the project requires a verified e-mail, the user is not signed in yet
+   * (`signedIn: false`) and the confirmation e-mail is always sent (to Rivium's own page when there is no
+   * `redirectUrl`). `continueUrl`: where the "Continue" button of Rivium's page takes the user afterwards.
    */
-  async signUpWithEmail(input: EmailPasswordInput & { redirectUrl?: string }): Promise<SignUpResult> {
+  async signUpWithEmail(input: EmailPasswordInput & { redirectUrl?: string; continueUrl?: string }): Promise<SignUpResult> {
     const res = await this.request<{ userId: string; verificationSent: boolean; session: ServerTokens | null }>(
       'POST',
       '/v1/password/sign-up',
-      { email: input.email, password: input.password, redirectUrl: input.redirectUrl },
+      { email: input.email, password: input.password, redirectUrl: input.redirectUrl, continueUrl: input.continueUrl },
     );
     if (res.session) await this.signIn(res.session);
     return { userId: res.userId, verificationSent: !!res.verificationSent, signedIn: !!res.session };
@@ -252,8 +254,8 @@ export class RiviumAuth {
    * Sends a reset link to `redirectUrl?token=…`, or to Rivium's own reset page when `redirectUrl` is left out.
    * Answers the same whether or not the address has an account.
    */
-  async sendPasswordReset(input: { email: string; redirectUrl?: string }): Promise<void> {
-    await this.request('POST', '/v1/password/forgot', { email: input.email, redirectUrl: input.redirectUrl });
+  async sendPasswordReset(input: { email: string; redirectUrl?: string; continueUrl?: string }): Promise<void> {
+    await this.request('POST', '/v1/password/forgot', { email: input.email, redirectUrl: input.redirectUrl, continueUrl: input.continueUrl });
   }
 
   /** Sets a new password with the token from the reset link. Ends every session; the user then signs in. */
@@ -266,9 +268,23 @@ export class RiviumAuth {
     await this.request('POST', '/v1/email/verify', { token: input.token });
   }
 
-  /** Sends the signed-in user a new verification e-mail. */
-  async sendEmailVerification(input: { redirectUrl: string }): Promise<void> {
-    await this.authed('POST', '/v1/email/send-verification', { redirectUrl: input.redirectUrl });
+  /** Sends the signed-in user a new verification e-mail (to Rivium's own page when `redirectUrl` is left out). */
+  async sendEmailVerification(input: { redirectUrl?: string; continueUrl?: string } = {}): Promise<void> {
+    await this.authed('POST', '/v1/email/send-verification', { redirectUrl: input.redirectUrl, continueUrl: input.continueUrl });
+  }
+
+  /**
+   * Sends the confirmation e-mail again to someone who can't sign in yet because the project requires a verified
+   * e-mail (signing in failed with `EMAIL_NOT_VERIFIED`). The e-mail and password prove the account; a wrong pair fails
+   * like signing in (`INVALID_CREDENTIALS`). Nothing is sent to an already confirmed account. Does not sign in.
+   */
+  async resendVerification(input: EmailPasswordInput & { redirectUrl?: string; continueUrl?: string }): Promise<void> {
+    await this.request('POST', '/v1/email/resend-verification', {
+      email: input.email,
+      password: input.password,
+      redirectUrl: input.redirectUrl,
+      continueUrl: input.continueUrl,
+    });
   }
 
   /** E-mails a sign-in link to `redirectUrl?token=…`. The account is created on first use. */
