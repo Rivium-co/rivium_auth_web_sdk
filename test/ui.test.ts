@@ -203,9 +203,9 @@ describe('sign-in screens (web)', () => {
     const signedIn = mount(f.auth);
     await settle();
     await click('telegram');
-    await type('phone', '+98 912 345-6789');
+    await type('phone', '+44 7700 900-123');
     await click('send-code');
-    expect(f.bodies('/v1/telegram/code')[0]).toEqual({ phone: '+989123456789' });
+    expect(f.bodies('/v1/telegram/code')[0]).toEqual({ phone: '+447700900123' });
     expect(text()).not.toContain('javascript');
     expect(has('bot-link')).toBe(false);
     bot = 'https://t.me/tikashop_bot';
